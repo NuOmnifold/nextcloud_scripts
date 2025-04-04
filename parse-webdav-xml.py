@@ -39,7 +39,7 @@ def parse_webdav_xml(xml_content):
         
         # Get the size
         size = response.find('./d:propstat/d:prop/d:getcontentlength', namespaces)
-        if size is not None:
+        if size is not None and size.text is not None:
             file_info['size'] = int(size.text)
         else:
             file_info['size'] = 0
@@ -119,25 +119,37 @@ def main():
     # Sort files (directories first, then alphabetically)
     files.sort(key=lambda x: (not x['is_directory'], x['filename'].lower()))
     
-    # Calculate column widths for pretty printing
-    max_name_width = max([len(f['filename']) for f in files]) if files else 10
-    max_name_width = min(max_name_width, 40)  # Limit to 40 chars
+    # Two output modes - pretty table with truncation and full filename list
     
-    # Print headers
+    # Pretty table with truncation first
+    max_name_width = 40  # Set default width for display
+    
+    # Print headers for pretty display
     print(f"{'Type':<4} {'Name':<{max_name_width}} {'Size':<10} {'Modified':<19}")
     print(f"{'-'*4} {'-'*max_name_width} {'-'*10} {'-'*19}")
     
-    # Print file listing
+    # Print file listing with truncated names for readability
     for file in files:
         file_type = "DIR" if file['is_directory'] else "FILE"
         name = file['filename']
+        display_name = name
         if len(name) > max_name_width:
-            name = name[:max_name_width-3] + "..."
+            display_name = name[:max_name_width-3] + "..."
         
         size = "-" if file['is_directory'] else format_size(file['size'])
         modified = file['modified']
         
-        print(f"{file_type:<4} {name:<{max_name_width}} {size:<10} {modified}")
+        print(f"{file_type:<4} {display_name:<{max_name_width}} {size:<10} {modified}")
+    
+    print("-" * 80)
+    print(f"Total: {len(files)} items")
+    
+    # Now print full filenames for easy copy/paste
+    print("\nFull filenames (for download references):")
+    print("-" * 80)
+    for file in files:
+        file_type = "DIR" if file['is_directory'] else "FILE"
+        print(f"{file_type}: {file['filename']}")
     
     print("-" * 80)
     print(f"Total: {len(files)} items")
